@@ -1,0 +1,25 @@
+{
+  "name": "magic-hour-remotion-example",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "studio": "remotion studio",
+    "magic": "magichour-remotion dev",
+    "prefetch": "magichour-remotion prefetch",
+    "render": "magichour-remotion prefetch && remotion render ScriptEdit out/script-edit.mp4"
+  },
+  "dependencies": {
+    "@remotion/cli": "4.0.543",
+    "@remotion/bundler": "4.0.543",
+    "@remotion/renderer": "4.0.543",
+    "magic-hour-remotion": "file:..",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "remotion": "4.0.543",
+    "zod": "4.6.7"
+  },
+  "devDependencies": {
+    "@types/react": "^19.0.0",
+    "typescript": "^5.6.0"
+  }
+}

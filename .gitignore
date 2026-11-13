@@ -1,0 +1,6 @@
+node_modules
+dist
+*.tgz
+example/public/magichour
+example/out
+.env
