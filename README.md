@@ -2,15 +2,15 @@
 
 [![CI](https://github.com/ItsAdarsh008/magic-hour-remotion/actions/workflows/ci.yml/badge.svg)](https://github.com/ItsAdarsh008/magic-hour-remotion/actions/workflows/ci.yml) [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
-**Magic Hour AI as Remotion components.** Lip sync, talking photos, face swap, upscaling, image-to-video, voice and background removal, written like any other part of your video:
+**Magic Hour AI as Remotion components.** Lip sync, talking photos, face swap, upscaling, image-to-video, voice cloning and background removal, written like any other part of your video:
 
 ```tsx
 import { MagicLipSync } from "magic-hour-remotion";
 
-<MagicLipSync video="host.mp4" text="We shipped it today." voice="cv-0001" />
+<MagicLipSync video="host.mp4" text="We shipped it today." />
 ```
 
-Change the `text`, save, and the person on screen says the new line a few seconds later in Remotion Studio. Render as usual, and every result is cached so you never pay twice for the same props.
+Change the `text`, save, and a few seconds later in Remotion Studio the person on screen says the new line, in their own cloned voice, with their lips re-synced. Render as usual, and every result is cached so you never pay twice for the same props.
 
 ## Quickstart
 
@@ -31,19 +31,20 @@ No key yet? Add `--mock` to `dev` and `prefetch`. Outputs are faked with ffmpeg 
 
 | Component | Props | Output |
 |---|---|---|
-| `MagicLipSync` | `video`, `audio` **or** `text` + `voice`, `mode?`, `maxFps?`, `trim?` | video |
-| `MagicTalkingPhoto` | `image`, `audio` **or** `text` + `voice`, `resolution?` | video |
+| `MagicLipSync` | `video`, `audio` **or** `text` (+ `cloneVoiceFrom?` / `voice?`), `mode?`, `maxFps?`, `trim?` | video |
+| `MagicTalkingPhoto` | `image`, `audio` **or** `text` + (`cloneVoiceFrom` or `voice`), `resolution?` | video |
 | `MagicFaceSwap` | `video`, `face`, `trim?` | video |
 | `MagicUpscale` | `video`, `resolution` | video |
 | `MagicImageToVideo` | `image`, `seconds`, `prompt?`, `model?`, `resolution?` | video |
-| `MagicVoice` | `text`, `voice`, `language?`, `speed?` | audio |
+| `MagicVoice` | `text`, `cloneFrom` **or** `voice`, `language?`, `speed?` | audio |
 | `MagicRemoveBackground` | `image`, `background?` | image |
 
 - Inputs are paths in `public/` (`"host.mp4"`) or https URLs.
 - Video components take every `<OffthreadVideo>` prop; `MagicVoice` takes `<Audio>` props; `MagicRemoveBackground` takes `<Img>` props.
 - `cacheKey` forces a fresh generation with otherwise identical props.
 - `useMagicAsset(spec)` is exported if you want to build your own component.
-- `npx magichour-remotion voices` lists the voice ids you can use.
+- **Voices:** with `text`, the voice is cloned from a sample of the speaker (Magic Hour's voice cloner, using up to 45s of audio). `MagicLipSync` samples the video's own audio by default, so `text` alone is enough. Pass `cloneVoiceFrom="clip.mp4"` to sample something else, or `voice="cv-0001"` for a stock voice (`npx magichour-remotion voices` lists them).
+- Only clone voices and change what people say on footage of yourself or of people who agreed to it.
 
 ## How it works
 
@@ -55,7 +56,7 @@ Remotion renders frame by frame and needs every frame to come out the same each 
 4. **Before rendering:** `magichour-remotion prefetch` renders your compositions at 10% scale in a "collect" mode where components report the jobs they need instead of drawing. Then it generates whatever isn't cached. Use `--props data.json` for data-driven templates, or `--from-requests` to skip the scan.
 5. **While rendering:** a missing asset stops the render with a clear message. You never ship a video with placeholder frames in it.
 
-Specs can be nested. `text` + `voice` on `MagicLipSync` is a voice job feeding a lip-sync job, and the runner generates them in order.
+Specs can be nested. `text` on `MagicLipSync` is a voice-clone job feeding a lip-sync job, and the runner generates them in order.
 
 ## CLI
 
@@ -79,8 +80,8 @@ Every distinct set of props is one paid generation. Lip sync is about 1 credit p
 
 `example/` is a Remotion project with two compositions:
 
-- **ScriptEdit**: the demo. Edit `line` in the Studio's props panel and the host re-lip-syncs. The code on screen updates to match.
-- **FounderUpdate**: a vertical talking-headshot update made from a photo and a script.
+- **ScriptEdit**: the demo. Edit `line` in the Studio's props panel and the host says it in their own voice, lips re-synced. The code on screen updates to match.
+- **FounderUpdate**: a vertical talking-headshot update made from a photo, a script and a voice sample.
 
 ```bash
 cd example && npm i

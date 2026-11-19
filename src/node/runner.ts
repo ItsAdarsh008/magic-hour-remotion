@@ -39,6 +39,7 @@ const describe = (spec: JobSpec) => {
     .map((k) => s[k])
     .filter((v): v is string => typeof v === "string")
     .map((v) => path.basename(v));
+  if (spec.kind === "voice" && typeof spec.cloneFrom === "string") bits.push(`cloned from ${path.basename(spec.cloneFrom)}`);
   if (spec.kind === "voice") bits.push(`"${spec.text.slice(0, 40)}${spec.text.length > 40 ? "…" : ""}"`);
   return `${LABEL[spec.kind]}${bits.length ? ` (${bits.join(", ")})` : ""}`;
 };
@@ -134,7 +135,7 @@ export class MagicRunner {
 
   private async resolveInputs(spec: JobSpec, opts: { retryErrors?: boolean }): Promise<JobSpec> {
     const out: Record<string, unknown> = { ...spec };
-    const keys = ["video", "audio", "image", "face", "background"] as const;
+    const keys = ["video", "audio", "image", "face", "background", "cloneFrom"] as const;
     await Promise.all(
       keys.map(async (k) => {
         const v = (spec as Record<string, unknown>)[k] as MagicInput | undefined;

@@ -7,13 +7,14 @@ export const founderUpdateSchema = z.object({
   name: z.string(),
   headshot: z.string(),
   script: z.string(),
-  voice: z.string(),
+  /** A clip of the person talking; their voice is cloned from it. */
+  voiceSample: z.string(),
 });
 
-export const FounderUpdate: React.FC<z.infer<typeof founderUpdateSchema>> = ({ name, headshot, script, voice }) => (
+export const FounderUpdate: React.FC<z.infer<typeof founderUpdateSchema>> = ({ name, headshot, script, voiceSample }) => (
   <AbsoluteFill style={{ background: "#0b0a10", fontFamily: "Inter, system-ui, sans-serif" }}>
     <AbsoluteFill style={{ top: 0, height: 1300 }}>
-      <MagicTalkingPhoto image={headshot} text={script} voice={voice} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+      <MagicTalkingPhoto image={headshot} text={script} cloneVoiceFrom={voiceSample} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
     </AbsoluteFill>
     <Sequence from={10}>
       <div style={{ position: "absolute", left: 80, right: 80, top: 1380, color: "white" }}>

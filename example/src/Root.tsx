@@ -5,14 +5,13 @@ import { FounderUpdate, founderUpdateSchema } from "./FounderUpdate";
 
 export const Root: React.FC = () => (
   <>
-    {/* The demo: edit `line` in the Studio's props panel and the host's mouth re-syncs. */}
+    {/* The demo: edit `line` in the Studio's props panel and the host says it, in their own cloned voice, lips re-synced. */}
     <Composition
       id="ScriptEdit"
       component={ScriptEdit}
       schema={scriptEditSchema}
       defaultProps={{
-        line: "We shipped it today, not Friday.",
-        voice: "cv-0001",
+        line: "We shipped the new editor on Friday.",
       }}
       durationInFrames={180}
       fps={30}
@@ -28,7 +27,7 @@ export const Root: React.FC = () => (
         name: "Adarsh",
         headshot: "founder.png",
         script: "This week we doubled signups and cut render time in half.",
-        voice: "cv-0001",
+        voiceSample: "host.mp4",
       }}
       durationInFrames={210}
       fps={30}

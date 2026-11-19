@@ -24,17 +24,17 @@ Video components accept every `<OffthreadVideo>` prop (`style`, `volume`, `muted
 
 | Component | Required props | Use for |
 |---|---|---|
-| `<MagicLipSync>` | `video` + (`audio` or `text` + `voice`) | Change what someone on camera says |
-| `<MagicTalkingPhoto>` | `image` + (`audio` or `text` + `voice`) | Make a headshot / illustration speak |
+| `<MagicLipSync>` | `video` + (`audio` or `text`) | Change what someone on camera says, in their own cloned voice |
+| `<MagicTalkingPhoto>` | `image` + (`audio` or `text` + `cloneVoiceFrom`/`voice`) | Make a headshot / illustration speak |
 | `<MagicFaceSwap>` | `video`, `face` | Put a face from an image onto footage |
 | `<MagicUpscale>` | `video`, `resolution` (`"1080p"`/`"2k"`/`"4k"`) | Clean up low-res clips |
 | `<MagicImageToVideo>` | `image`, `seconds`, optional `prompt` | Animate a still |
-| `<MagicVoice>` | `text`, `voice` | Narration as `<Audio>` |
+| `<MagicVoice>` | `text` + (`cloneFrom` or `voice`) | Narration as `<Audio>` |
 | `<MagicRemoveBackground>` | `image`, optional `background` | Cut-outs as `<Img>` |
 
 Optional on all: `cacheKey` (change it to force a fresh generation), `trim={{ start, end }}` on video jobs.
 
-Voice ids: run `npx magichour-remotion voices`. Prefer the user's own cloned voice or a stock `cv-` voice; never use a real person's voice without their consent.
+Voices: with `text`, the voice is cloned from a sample clip of the speaker. `<MagicLipSync>` samples the video's own audio by default, so `text` alone is enough. Use `cloneVoiceFrom="clip.mp4"` for another sample, or `voice="cv-0001"` for a stock voice (`npx magichour-remotion voices`). Only clone voices of the user or people who consented.
 
 ## Workflow you must follow
 

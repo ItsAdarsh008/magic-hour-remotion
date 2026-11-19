@@ -5,12 +5,11 @@ import { MagicLipSync } from "magic-hour-remotion";
 
 export const scriptEditSchema = z.object({
   line: z.string(),
-  voice: z.string(),
 });
 
 const mono = "'JetBrains Mono', 'SF Mono', Menlo, monospace";
 
-export const ScriptEdit: React.FC<z.infer<typeof scriptEditSchema>> = ({ line, voice }) => {
+export const ScriptEdit: React.FC<z.infer<typeof scriptEditSchema>> = ({ line }) => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
   const enter = spring({ frame, fps, config: { damping: 200 } });
@@ -73,7 +72,6 @@ export const ScriptEdit: React.FC<z.infer<typeof scriptEditSchema>> = ({ line, v
         <MagicLipSync
           video="host.mp4"
           text={line}
-          voice={voice}
           style={{ width: "100%", height: "100%", objectFit: "cover" }}
         />
       </div>

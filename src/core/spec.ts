@@ -59,8 +59,13 @@ export type ImageToVideoSpec = {
 export type VoiceSpec = {
   kind: "voice";
   text: string;
-  /** A voice id from GET /v1/voices (including your own cloned voices). */
-  voice: string;
+  /**
+   * Clone the voice from this audio or video (up to the first 45s is used as the sample).
+   * This is how Retake-style edits keep the speaker's own voice.
+   */
+  cloneFrom?: MagicInput;
+  /** Or use a stock voice id from `npx magichour-remotion voices`. */
+  voice?: string;
   language?: string;
   speed?: number;
 };

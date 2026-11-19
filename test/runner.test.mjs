@@ -67,3 +67,11 @@ test("missing input files fail clearly without calling the API", async () => {
   await assert.rejects(runner.ensure({ kind: "face-swap", video: "nope.mp4", face: "me.png" }), /Input not found: public\/nope.mp4/);
   assert.equal(calls.length, 0);
 });
+
+test("lip sync with text clones the voice from the video by default", async () => {
+  const { dir, calls, runner } = await setup();
+  await runner.ensure({ kind: "lip-sync", video: "host.mp4", audio: { kind: "voice", text: "Hi", cloneFrom: "host.mp4" } });
+  assert.equal(calls[0].kind, "voice");
+  assert.equal(calls[0].cloneFrom, path.join(dir, "host.mp4"));
+  assert.equal(calls[0].voice, undefined);
+});

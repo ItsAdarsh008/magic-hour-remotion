@@ -22,17 +22,26 @@ type ImgProps = Omit<React.ComponentProps<typeof Img>, "src">;
 
 type Common = { cacheKey?: string };
 
-/** Speech can be an audio file, or text + voice (generated with Magic Hour's voice API first). */
+/**
+ * Speech can be an audio file, or text that Magic Hour speaks.
+ * With text, the voice is cloned from `cloneVoiceFrom` (lip sync defaults to the video's own audio),
+ * or a stock `voice` id is used.
+ */
 type Speech =
-  | { audio: MagicInput; text?: never; voice?: never; language?: never }
-  | { audio?: never; text: string; voice: string; language?: string };
+  | { audio: MagicInput; text?: never; voice?: never; cloneVoiceFrom?: never; language?: never }
+  | { audio?: never; text: string; voice?: string; cloneVoiceFrom?: MagicInput; language?: string };
 
-const speechInput = (p: { audio?: MagicInput; text?: string; voice?: string; language?: string }): MagicInput => {
+const speechInput = (
+  p: { audio?: MagicInput; text?: string; voice?: string; cloneVoiceFrom?: MagicInput; language?: string },
+  defaultCloneFrom?: MagicInput,
+): MagicInput => {
   if (p.audio !== undefined) return p.audio;
-  if (p.text === undefined || p.voice === undefined) {
-    throw new Error("[magichour] pass either `audio` or `text` + `voice`");
+  if (p.text === undefined) throw new Error("[magichour] pass either `audio` or `text`");
+  const cloneFrom = p.voice ? undefined : (p.cloneVoiceFrom ?? defaultCloneFrom);
+  if (!p.voice && cloneFrom === undefined) {
+    throw new Error("[magichour] with `text`, also pass `cloneVoiceFrom` (a clip of the speaker) or a stock `voice` id");
   }
-  const spec: VoiceSpec = { kind: "voice", text: p.text, voice: p.voice, language: p.language };
+  const spec: VoiceSpec = { kind: "voice", text: p.text, voice: p.voice, cloneFrom, language: p.language };
   return spec;
 };
 
@@ -85,16 +94,18 @@ export type MagicLipSyncProps = Common &
   Speech & { video: MagicInput; mode?: LipSyncSpec["mode"]; maxFps?: number; trim?: Trim } & VideoProps;
 
 /**
- * Re-animates the mouth in `video` to match `audio` (or `text` spoken by `voice`).
+ * Re-animates the mouth in `video` to match `audio`, or makes the speaker say `text`
+ * in their own cloned voice (sampled from the video's audio unless you pass `cloneVoiceFrom` or `voice`).
  *
- * @example <MagicLipSync video="host.mp4" text="Ship it today." voice="my-voice-id" />
+ * @example <MagicLipSync video="host.mp4" text="We shipped it today." />
  */
 export const MagicLipSync: React.FC<MagicLipSyncProps> = (props) => {
-  const { spec, rest } = pick(props, ["video", "audio", "text", "voice", "language", "mode", "maxFps", "trim", "cacheKey"] as const);
+  const { spec, rest } = pick(props, ["video", "audio", "text", "voice", "cloneVoiceFrom", "language", "mode", "maxFps", "trim", "cacheKey"] as const);
   const job: JobSpec = {
     kind: "lip-sync",
     video: spec.video as MagicInput,
-    audio: speechInput(spec),
+    // No voice given? Clone it from the person in the video, like Retake.
+    audio: speechInput(spec, spec.video as MagicInput),
     mode: spec.mode as LipSyncSpec["mode"],
     maxFps: spec.maxFps as number | undefined,
     trim: spec.trim as Trim | undefined,
@@ -117,7 +128,7 @@ export type MagicTalkingPhotoProps = Common &
 
 /** Makes a still photo talk. Great for founders' headshots, historical figures in explainers, mascots. */
 export const MagicTalkingPhoto: React.FC<MagicTalkingPhotoProps> = (props) => {
-  const { spec, rest } = pick(props, ["image", "audio", "text", "voice", "language", "resolution", "trim", "cacheKey"] as const);
+  const { spec, rest } = pick(props, ["image", "audio", "text", "voice", "cloneVoiceFrom", "language", "resolution", "trim", "cacheKey"] as const);
   const job: JobSpec = {
     kind: "talking-photo",
     image: spec.image as MagicInput,
@@ -148,11 +159,14 @@ export const MagicImageToVideo: React.FC<MagicImageToVideoProps> = (props) => {
   return <MagicVideoOutput spec={job} preview={job.image} previewType="image" mediaProps={rest as VideoProps} />;
 };
 
-export type MagicVoiceProps = Common & { text: string; voice: string; language?: string; speed?: number } & AudioProps;
+export type MagicVoiceProps = Common &
+  { text: string; language?: string; speed?: number } &
+  ({ cloneFrom: MagicInput; voice?: never } | { voice: string; cloneFrom?: never }) &
+  AudioProps;
 
-/** Text-to-speech as an <Audio>. Silent until generated; no badge (it's audio). */
+/** Speech as an <Audio>: in a voice cloned from `cloneFrom`, or a stock `voice`. Silent until generated. */
 export const MagicVoice: React.FC<MagicVoiceProps> = (props) => {
-  const { spec, rest } = pick(props, ["text", "voice", "language", "speed", "cacheKey"] as const);
+  const { spec, rest } = pick(props, ["text", "voice", "cloneFrom", "language", "speed", "cacheKey"] as const);
   const job = { kind: "voice", ...spec } as VoiceSpec;
   const state = useMagicAsset(job);
   if (state.status === "done" && state.src) return <Audio {...(rest as AudioProps)} src={state.src} />;

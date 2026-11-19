@@ -27,6 +27,17 @@ const window = async (spec: { trim?: { start?: number; end?: number } }, lengthO
   return { startSeconds: start, endSeconds: Math.round(end * 100) / 100 };
 };
 
+/** Extracts up to 45s of mono audio from a clip to use as the voice-cloning sample. */
+const voiceSample = async (input: string, dir: string): Promise<string> => {
+  if (!(await hasBinary("ffmpeg"))) {
+    if (/\.(mp3|wav|m4a|aac|ogg|flac)$/i.test(input)) return input;
+    throw new Error("Cloning a voice from a video needs ffmpeg on PATH (or pass an audio file as cloneVoiceFrom)");
+  }
+  const out = path.join(dir, "voice-sample.mp3");
+  await ffmpeg(["-i", input, "-vn", "-ac", "1", "-t", "45", "-b:a", "128k", out]);
+  return out;
+};
+
 // ---------------------------------------------------------------------------
 // Real backend: the official magic-hour Node SDK
 // ---------------------------------------------------------------------------
@@ -116,10 +127,23 @@ export class MagicHourBackend implements Backend {
         break;
       }
       case "voice": {
-        res = await v1.aiVoiceGenerator.generate(
-          { name, style: { prompt: spec.text, voiceName: spec.voice, language: spec.language, speed: spec.speed } },
-          opts,
-        );
+        if (spec.cloneFrom) {
+          // Same approach as Retake: sample up to 45s of the speaker, then speak the new text in that voice.
+          const sample = await voiceSample(spec.cloneFrom as string, downloadDirectory);
+          res = await v1.aiVoiceCloner.generate(
+            {
+              name,
+              assets: { audioFilePath: sample },
+              style: { prompt: spec.text.slice(0, 1000), language: spec.language, speed: spec.speed },
+            },
+            opts,
+          );
+        } else {
+          res = await v1.aiVoiceGenerator.generate(
+            { name, style: { prompt: spec.text, voiceName: spec.voice, language: spec.language, speed: spec.speed } },
+            opts,
+          );
+        }
         break;
       }
       case "remove-background": {
