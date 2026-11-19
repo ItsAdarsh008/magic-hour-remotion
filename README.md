@@ -1,5 +1,7 @@
 # magic-hour-remotion
 
+[![CI](https://github.com/ItsAdarsh008/magic-hour-remotion/actions/workflows/ci.yml/badge.svg)](https://github.com/ItsAdarsh008/magic-hour-remotion/actions/workflows/ci.yml) [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+
 **Magic Hour AI as Remotion components.** Lip sync, talking photos, face swap, upscaling, image-to-video, voice and background removal, written like any other part of your video:
 
 ```tsx

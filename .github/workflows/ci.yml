@@ -1,0 +1,49 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node: [20, 22]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm test
+
+  example-mock-render:
+    # Full pipeline with the free mock backend: scan -> generate -> render.
+    runs-on: ubuntu-latest
+    needs: test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: sudo apt-get update && sudo apt-get install -y ffmpeg
+      - run: npm ci && npm run build
+      - working-directory: example
+        run: npm install
+      - working-directory: example
+        run: npx tsc -p .
+      - working-directory: example
+        env:
+          MAGICHOUR_MOCK_DELAY_MS: "100"
+        run: npx magichour-remotion prefetch --mock
+      - working-directory: example
+        run: npx remotion render ScriptEdit out/script-edit.mp4
+      - uses: actions/upload-artifact@v4
+        with:
+          name: script-edit-mock
+          path: example/out/script-edit.mp4
