@@ -11,12 +11,13 @@ export const RACE = {
   durationInFrames: 240, // 8s
   startYear: 2004,
   endYear: 2026,
-  yearsEndFrame: 190, // year counter reaches 2026 here, then holds
+  yearsEndFrame: 190, // the last IPO (Anthropic) lands here, then the chart holds
+  topN: 10,
   left: 300, // x where bars start (names live to the left)
   right: 270, // space for the value label at the bar end
-  top: 140,
-  rowHeight: 96,
-  barHeight: 72,
+  top: 128,
+  rowHeight: 84,
+  barHeight: 62,
   growFrames: 18,
 };
 
@@ -27,18 +28,28 @@ export type BarState = Ipo & {
   y: number;
   shownValue: number;
   visible: boolean;
+  /** 1 inside the top 10, fading to 0 as a bar is pushed out of it */
+  fade: number;
 };
 
-const appearFrame = (ipo: Ipo) => {
-  const t = (ipo.year - RACE.startYear) / (RACE.endYear - RACE.startYear);
-  // The three 2026 IPOs arrive in their real order: Cerebras (May), SpaceX (Jun), Anthropic (Nov).
-  const order2026: Record<string, number> = { Cerebras: -26, SpaceX: -14, Anthropic: 0 };
-  return Math.round(t * RACE.yearsEndFrame) + (order2026[ipo.name] ?? 0);
-};
+/**
+ * Entries arrive at a steady rhythm (not by calendar year), so the chart fills up fast
+ * like a classic bar chart race. The year counter interpolates between entries.
+ * The 2026 trio gets extra breathing room for the big finish.
+ */
+const APPEAR: number[] = (() => {
+  const n = TECH_IPOS.length;
+  const lateStart = n - 3;
+  return TECH_IPOS.map((_, i) =>
+    i < lateStart ? Math.round((i / lateStart) * 140) : [152, 168, RACE.yearsEndFrame][i - lateStart],
+  );
+})();
+
+const appearFrame = (ipo: Ipo) => APPEAR[TECH_IPOS.indexOf(ipo)];
 
 export const yearAt = (frame: number) =>
   Math.round(
-    interpolate(frame, [0, RACE.yearsEndFrame], [RACE.startYear, RACE.endYear], {
+    interpolate(frame, APPEAR, TECH_IPOS.map((x) => x.year), {
       extrapolateLeft: "clamp",
       extrapolateRight: "clamp",
     }),
@@ -85,6 +96,7 @@ export const raceAt = (frame: number): { bars: BarState[]; scaleMax: number } =>
       width: (ipo.raised * g * maxWidth) / scaleMax,
       y: RACE.top + rank * RACE.rowHeight,
       shownValue: ipo.raised * g,
+      fade: Math.max(0, Math.min(1, RACE.topN - rank)),
     };
   });
   return { bars, scaleMax };

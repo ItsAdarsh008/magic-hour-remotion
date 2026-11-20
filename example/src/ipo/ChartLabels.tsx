@@ -2,7 +2,7 @@ import React from "react";
 import { AbsoluteFill, useCurrentFrame } from "remotion";
 import { RACE, raceAt, yearAt } from "./race";
 
-const fmt = (v: number) => `$${v >= 10 ? v.toFixed(1) : v.toFixed(2)}B`;
+const fmt = (v: number) => (v < 1 ? `$${Math.round(v * 1000)}M` : `$${v >= 10 ? v.toFixed(1) : v.toFixed(2)}B`);
 
 /**
  * The exact numbers, names and year, drawn crisply by Remotion on top of the
@@ -16,11 +16,11 @@ export const ChartLabels: React.FC<{ frameOffset?: number; speed?: number; dark?
   return (
     <AbsoluteFill style={{ fontFamily: "Inter, system-ui, sans-serif", color: ink }}>
       <div style={{ position: "absolute", left: 60, top: 46, fontSize: 40, fontWeight: 800, letterSpacing: -0.5, textShadow: shadow }}>
-        Biggest tech IPOs ever
+        Biggest tech & telecom IPOs ever
         <span style={{ fontWeight: 500, opacity: 0.6, fontSize: 30 }}> · amount raised</span>
       </div>
       {bars
-        .filter((b) => b.visible)
+        .filter((b) => b.visible && b.fade > 0)
         .map((b) => (
           <React.Fragment key={b.name}>
             <div
@@ -33,10 +33,11 @@ export const ChartLabels: React.FC<{ frameOffset?: number; speed?: number; dark?
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "flex-end",
-                fontSize: 34,
+                fontSize: 29,
                 fontWeight: 700,
+                whiteSpace: "nowrap",
                 textShadow: shadow,
-                opacity: b.grow,
+                opacity: b.grow * b.fade,
               }}
             >
               {b.name}
@@ -49,11 +50,11 @@ export const ChartLabels: React.FC<{ frameOffset?: number; speed?: number; dark?
                 height: RACE.rowHeight,
                 display: "flex",
                 alignItems: "center",
-                fontSize: 32,
+                fontSize: 28,
                 fontWeight: 800,
                 fontVariantNumeric: "tabular-nums",
                 textShadow: shadow,
-                opacity: b.grow,
+                opacity: b.grow * b.fade,
               }}
             >
               {fmt(b.shownValue)}

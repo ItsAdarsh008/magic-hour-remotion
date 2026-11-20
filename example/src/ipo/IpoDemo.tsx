@@ -126,8 +126,8 @@ const CodeScene: React.FC<{ o: Orientation; dur: number }> = ({ o, dur }) => {
     <Fade dur={dur}>
       <ChartSlot o={o}>
         {/* frozen just before 2026, so the big reveal stays for scene 3 */}
-        <ChartBars speed={0} frameOffset={150} />
-        <ChartLabels speed={0} frameOffset={150} />
+        <ChartBars speed={0} frameOffset={147} />
+        <ChartLabels speed={0} frameOffset={147} />
         {/* The plugin's real placeholder badge, as it appears in Remotion Studio */}
         <div style={{ position: "absolute", inset: 0, transform: "translate(20px, 860px) scale(1.5)", transformOrigin: "0 0" }}>
           <MagicBadge kind="restyle" state={{ hash: "", status: generating ? "running" : "done" }} />
@@ -170,8 +170,8 @@ export const IpoDemo: React.FC<{ orientation: Orientation }> = ({ orientation: o
       <Sequence durationInFrames={120}>
         <Fade dur={120}>
           <ChartSlot o={o}>
-            <ChartBars speed={1.25} />
-            <ChartLabels speed={1.25} />
+            <ChartBars speed={1.22} />
+            <ChartLabels speed={1.22} />
           </ChartSlot>
           <Caption o={o} kicker="Remotion" title={<>A normal<br />bar chart race.</>} />
         </Fade>
