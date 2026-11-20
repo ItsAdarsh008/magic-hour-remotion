@@ -40,3 +40,20 @@ export const ffmpeg = async (args: string[]) => {
   const r = await run("ffmpeg", ["-y", "-loglevel", "error", ...args]);
   if (r.code !== 0) throw new Error(`ffmpeg failed: ${r.stderr.slice(-400)}`);
 };
+
+/** Width/height of a video via ffprobe (or Remotion's probe). */
+export const getDimensions = async (file: string): Promise<{ width: number; height: number; fps: number }> => {
+  const r = await run("ffprobe", [
+    "-v", "error", "-select_streams", "v:0",
+    "-show_entries", "stream=width,height,r_frame_rate",
+    "-of", "csv=p=0", file,
+  ]);
+  if (r.code === 0) {
+    const [w, h, rate] = r.stdout.trim().split(",");
+    const [n, d] = (rate ?? "30/1").split("/").map(Number);
+    return { width: Number(w), height: Number(h), fps: d ? n / d : 30 };
+  }
+  const { getVideoMetadata } = await import("@remotion/renderer");
+  const meta = await getVideoMetadata(file);
+  return { width: meta.width, height: meta.height, fps: meta.fps ?? 30 };
+};

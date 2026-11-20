@@ -6,6 +6,7 @@ export {
   MagicImageToVideo,
   MagicVoice,
   MagicRemoveBackground,
+  MagicRestyle,
 } from "./components/index.js";
 export type {
   MagicLipSyncProps,
@@ -15,6 +16,7 @@ export type {
   MagicImageToVideoProps,
   MagicVoiceProps,
   MagicRemoveBackgroundProps,
+  MagicRestyleProps,
 } from "./components/index.js";
 export { useMagicAsset, type MagicAssetState } from "./components/use-magic-asset.js";
 export { MagicBadge, MagicPlaceholder } from "./components/placeholder.js";

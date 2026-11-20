@@ -21,6 +21,7 @@ Options
   --props <json|file>     Input props to scan with (for data-driven templates)
   --every-nth-frame <n>   Scan faster by sampling frames (default: 1)
   --browser <path>        Chrome to scan with, if Remotion can't download one
+  --rerender              Re-render composition inputs and regenerate what's built on them (costs credits)
   --from-requests         prefetch: generate what the Studio requested instead of scanning
   --retry                 Retry assets that failed before
   --concurrency <n>       Parallel Magic Hour jobs (default: 3)
@@ -50,6 +51,7 @@ const main = async () => {
       "from-requests": { type: "boolean", default: false },
       browser: { type: "string" },
       retry: { type: "boolean", default: false },
+      rerender: { type: "boolean", default: false },
       concurrency: { type: "string" },
       mock: { type: "boolean", default: false },
       help: { type: "boolean", short: "h", default: false },
@@ -66,6 +68,11 @@ const main = async () => {
   const makeRunner = () =>
     new MagicRunner({
       publicDir,
+      entryPoint: values.entry
+        ? path.resolve(values.entry)
+        : path.resolve(["src/index.ts", "src/index.tsx", "src/index.js"].find((f) => existsSync(f)) ?? "src/index.ts"),
+      browserExecutable: values.browser ?? process.env.REMOTION_BROWSER_EXECUTABLE,
+      rerender: values.rerender,
       mock: values.mock || undefined,
       concurrency: values.concurrency ? Number(values.concurrency) : undefined,
     });
@@ -136,7 +143,7 @@ const main = async () => {
     const store = new ManifestStore(publicDir);
     const before = await store.read();
     const cached = jobs.filter((j) => before.assets[j.hash]?.status === "done").length;
-    if (cached) console.log(`${cached} already generated (cached), ${jobs.length - cached} to generate.`);
+    if (cached && !values.rerender) console.log(`${cached} already generated (cached), ${jobs.length - cached} to generate.`);
     const results = await Promise.allSettled(jobs.map((j) => runner.ensure(j.spec, { retryErrors: values.retry })));
     const failed = results.filter((r) => r.status === "rejected").length;
     console.log(failed ? `\n${failed} of ${jobs.length} failed. Fix the errors above, then run again with --retry.` : `\nAll ${jobs.length} ready. You can render now.`);

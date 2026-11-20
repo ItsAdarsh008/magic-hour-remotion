@@ -8,6 +8,8 @@ import {
   type LipSyncSpec,
   type MagicInput,
   type RemoveBackgroundSpec,
+  type RenderSpec,
+  type RestyleSpec,
   type TalkingPhotoSpec,
   type Trim,
   type VideoUpscaleSpec,
@@ -191,6 +193,57 @@ export const MagicRemoveBackground: React.FC<MagicRemoveBackgroundProps> = (prop
       style={(rest as ImgProps).style}
     />
   );
+};
+
+export type MagicRestyleProps = Common & {
+  artStyle: string;
+  /** The clip to restyle: a file in public/ or a URL… */
+  video?: MagicInput;
+  /** …or one of your own compositions, rendered locally first. */
+  composition?: string;
+  compositionProps?: Record<string, unknown>;
+  prompt?: string;
+  model?: string;
+  version?: "default" | "v1" | "v2" | "v3";
+  referenceImage?: MagicInput;
+  halfFps?: boolean;
+  trim?: Trim;
+} & VideoProps;
+
+/**
+ * Re-renders a clip in another art style (Magic Hour video-to-video).
+ *
+ * @example <MagicRestyle composition="ChartBars" artStyle="Claymation" />
+ * @example <MagicRestyle video="skate.mp4" artStyle="Watercolor" />
+ */
+export const MagicRestyle: React.FC<MagicRestyleProps> = (props) => {
+  const { spec, rest } = pick(props, [
+    "artStyle", "video", "composition", "compositionProps", "prompt", "model",
+    "version", "referenceImage", "halfFps", "trim", "cacheKey",
+  ] as const);
+  let video = spec.video as MagicInput | undefined;
+  if (spec.composition) {
+    const render: RenderSpec = {
+      kind: "render",
+      composition: spec.composition as string,
+      props: spec.compositionProps as Record<string, unknown> | undefined,
+    };
+    video = render;
+  }
+  if (video === undefined) throw new Error("[magichour] <MagicRestyle> needs `video` or `composition`");
+  const job: RestyleSpec & { cacheKey?: string } = {
+    kind: "restyle",
+    video,
+    artStyle: spec.artStyle as string,
+    prompt: spec.prompt as string | undefined,
+    model: spec.model as string | undefined,
+    version: spec.version as RestyleSpec["version"],
+    referenceImage: spec.referenceImage as MagicInput | undefined,
+    halfFps: spec.halfFps as boolean | undefined,
+    trim: spec.trim as Trim | undefined,
+    cacheKey: spec.cacheKey as string | undefined,
+  };
+  return <MagicVideoOutput spec={job} preview={undefined} previewType="video" mediaProps={rest as VideoProps} />;
 };
 
 export { isSpec };

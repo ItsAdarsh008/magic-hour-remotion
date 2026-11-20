@@ -2,7 +2,7 @@ import { copyFile, mkdtemp } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { OUTPUT_EXT, OUTPUT_TYPE, type JobSpec } from "../core/spec.js";
-import { ffmpeg, getDuration, hasBinary } from "./media.js";
+import { ffmpeg, getDimensions, getDuration, hasBinary } from "./media.js";
 
 /** A spec whose inputs have been replaced by local file paths or URLs. */
 export type ResolvedSpec = JobSpec & { name: string };
@@ -146,6 +146,36 @@ export class MagicHourBackend implements Backend {
         }
         break;
       }
+      case "restyle": {
+        const video = spec.video as string;
+        const dims = await getDimensions(video);
+        res = await v1.videoToVideo.generate(
+          {
+            name,
+            assets: {
+              videoSource: "file",
+              videoFilePath: video,
+              initialImagePath: spec.referenceImage as string | undefined,
+            },
+            ...(await window(spec, video)),
+            fps: Math.round(dims.fps),
+            width: dims.width,
+            height: dims.height,
+            fpsResolution: spec.halfFps ? "HALF" : "FULL",
+            style: {
+              artStyle: spec.artStyle,
+              model: spec.model,
+              version: spec.version,
+              prompt: spec.prompt,
+              promptType: spec.prompt ? "append_default" : undefined,
+            },
+          },
+          opts,
+        );
+        break;
+      }
+      case "render":
+        throw new Error("render jobs run locally, not through the API");
       case "remove-background": {
         res = await v1.imageBackgroundRemover.generate(
           {
@@ -173,6 +203,18 @@ export class MagicHourBackend implements Backend {
     return { file, projectId: res.id, credits: res.creditsCharged ?? res.credits_charged };
   }
 }
+
+/** Cheap ffmpeg looks so each mock style is visibly different. Not what Magic Hour produces. */
+const mockStyleFilter = (style: string): string => {
+  const s = style.toLowerCase();
+  if (s.includes("chalk")) return "edgedetect=low=0.1:high=0.3,negate,colorchannelmixer=.3:.4:.3:0:.3:.4:.3:0:.3:.4:.3,negate,eq=brightness=0.05";
+  if (s.includes("clay")) return "boxblur=3:1,eq=saturation=1.8:contrast=1.15,unsharp=5:5:1.5";
+  if (s.includes("paper") || s.includes("origami")) return "eq=saturation=1.5:contrast=1.35,unsharp=7:7:2";
+  if (s.includes("yarn") || s.includes("fabric")) return "noise=alls=25:allf=t,boxblur=1:1,eq=saturation=1.4";
+  if (s.includes("water")) return "gblur=sigma=2,eq=saturation=0.8:brightness=0.06";
+  if (s.includes("pixel")) return "scale=iw/12:ih/12,scale=iw*12:ih*12:flags=neighbor";
+  return "hue=h=40:s=1.3";
+};
 
 // ---------------------------------------------------------------------------
 // Mock backend: free, offline, uses ffmpeg. For building templates, CI and demos.
@@ -227,6 +269,14 @@ export class MockBackend implements Backend {
         await copyFile(spec.image as string, out);
         break;
       }
+      case "restyle": {
+        if (!haveFfmpeg) throw new Error("Mock mode needs ffmpeg on PATH");
+        const t = spec.trim ? ["-ss", String(spec.trim.start ?? 0), ...(spec.trim.end ? ["-to", String(spec.trim.end)] : [])] : [];
+        await ffmpeg([...t, "-i", spec.video as string, "-vf", mockStyleFilter(spec.artStyle), "-an", ...enc, out]);
+        break;
+      }
+      case "render":
+        throw new Error("render jobs run locally");
     }
     return { file: out, projectId: "mock", credits: 0 };
   }

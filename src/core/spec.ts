@@ -70,6 +70,34 @@ export type VoiceSpec = {
   speed?: number;
 };
 
+/** Re-renders a clip in another art style (Magic Hour video-to-video). */
+export type RestyleSpec = {
+  kind: "restyle";
+  video: MagicInput;
+  /** One of Magic Hour's art styles, e.g. "Claymation", "Chalkboard", "Paper Cut", "Yarn", "Watercolor". */
+  artStyle: string;
+  prompt?: string;
+  model?: string;
+  /** "v2" is described by Magic Hour as more consistent; "v3" needs `referenceImage`. */
+  version?: "default" | "v1" | "v2" | "v3";
+  referenceImage?: MagicInput;
+  /** Render at half the fps to halve cost. */
+  halfFps?: boolean;
+  trim?: Trim;
+};
+
+/**
+ * Renders one of your own Remotion compositions to a video, locally (no API call).
+ * Use it as the input of any Magic Hour video tool:
+ *   <MagicRestyle video={{ kind: "render", composition: "ChartBars" }} artStyle="Claymation" />
+ * Changing the composition's code does not change this hash: bump `cacheKey` (or run prefetch --rerender).
+ */
+export type RenderSpec = {
+  kind: "render";
+  composition: string;
+  props?: Record<string, unknown>;
+};
+
 export type RemoveBackgroundSpec = {
   kind: "remove-background";
   image: MagicInput;
@@ -84,6 +112,8 @@ export type JobSpec = (
   | ImageToVideoSpec
   | VoiceSpec
   | RemoveBackgroundSpec
+  | RestyleSpec
+  | RenderSpec
 ) & {
   /** Change this to force a fresh generation with otherwise identical props. */
   cacheKey?: string;
@@ -100,6 +130,8 @@ export const OUTPUT_TYPE: Record<JobKind, OutputType> = {
   "image-to-video": "video",
   voice: "audio",
   "remove-background": "image",
+  restyle: "video",
+  render: "video",
 };
 
 export const OUTPUT_EXT: Record<OutputType, string> = {
@@ -116,6 +148,8 @@ export const LABEL: Record<JobKind, string> = {
   "image-to-video": "image to video",
   voice: "voice",
   "remove-background": "background removal",
+  restyle: "restyle",
+  render: "composition render",
 };
 
 export const isSpec = (x: unknown): x is JobSpec =>

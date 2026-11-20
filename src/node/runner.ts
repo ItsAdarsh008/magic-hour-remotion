@@ -16,6 +16,12 @@ export type RunnerOptions = {
   concurrency?: number;
   log?: (msg: string) => void;
   backend?: Backend;
+  /** Remotion entry point, needed for `render` jobs (defaults to src/index.ts). */
+  entryPoint?: string;
+  /** Chrome / chrome-headless-shell for `render` jobs, if Remotion can't download one. */
+  browserExecutable?: string;
+  /** Re-render `render` jobs (and regenerate everything built on them) even if cached. */
+  rerender?: boolean;
 };
 
 const limiter = (max: number) => {
@@ -39,9 +45,42 @@ const describe = (spec: JobSpec) => {
     .map((k) => s[k])
     .filter((v): v is string => typeof v === "string")
     .map((v) => path.basename(v));
+  if (spec.kind === "render") return `render of composition "${spec.composition}"`;
+  if (spec.kind === "restyle") bits.push(spec.artStyle);
   if (spec.kind === "voice" && typeof spec.cloneFrom === "string") bits.push(`cloned from ${path.basename(spec.cloneFrom)}`);
   if (spec.kind === "voice") bits.push(`"${spec.text.slice(0, 40)}${spec.text.length > 40 ? "…" : ""}"`);
   return `${LABEL[spec.kind]}${bits.length ? ` (${bits.join(", ")})` : ""}`;
+};
+
+const dependsOnRender = (spec: JobSpec): boolean => {
+  if (spec.kind === "render") return true;
+  return Object.values(spec).some((v) => isSpec(v) && dependsOnRender(v));
+};
+
+const bundles = new Map<string, Promise<string>>();
+
+/** Renders a composition of the user's own project to an mp4 (no Magic Hour call, no credits). */
+const renderComposition = async (
+  spec: Extract<JobSpec, { kind: "render" }>,
+  opts: RunnerOptions,
+): Promise<{ file: string; projectId?: string; credits?: number }> => {
+  const { bundle } = await import("@remotion/bundler");
+  const { renderMedia, selectComposition } = await import("@remotion/renderer");
+  const os = await import("node:os");
+  const { mkdtemp } = await import("node:fs/promises");
+  const entryPoint = path.resolve(opts.entryPoint ?? "src/index.ts");
+  let serveUrlP = bundles.get(entryPoint);
+  if (!serveUrlP) {
+    serveUrlP = bundle({ entryPoint, publicDir: opts.publicDir });
+    bundles.set(entryPoint, serveUrlP);
+  }
+  const serveUrl = await serveUrlP;
+  const inputProps = spec.props ?? {};
+  const browserExecutable = opts.browserExecutable ?? process.env.REMOTION_BROWSER_EXECUTABLE ?? null;
+  const composition = await selectComposition({ serveUrl, id: spec.composition, inputProps, browserExecutable });
+  const out = path.join(await mkdtemp(path.join(os.tmpdir(), "magichour-render-")), "render.mp4");
+  await renderMedia({ composition, serveUrl, codec: "h264", outputLocation: out, inputProps, browserExecutable });
+  return { file: out, projectId: "local-render", credits: 0 };
 };
 
 /**
@@ -53,6 +92,7 @@ export class MagicRunner {
   readonly store: ManifestStore;
   readonly backend: Backend;
   private inflight = new Map<string, Promise<string>>();
+  private forcedDone = new Set<string>();
   private limit: ReturnType<typeof limiter>;
   private log: (msg: string) => void;
 
@@ -84,7 +124,8 @@ export class MagicRunner {
 
   private async generate(hash: string, spec: JobSpec, opts: { retryErrors?: boolean }): Promise<string> {
     const entry = await this.store.get(hash);
-    if (entry?.status === "done" && entry.file && existsSync(path.join(this.opts.publicDir, entry.file))) {
+    const forced = this.opts.rerender && dependsOnRender(spec) && !this.forcedDone.has(hash);
+    if (!forced && entry?.status === "done" && entry.file && existsSync(path.join(this.opts.publicDir, entry.file))) {
       return entry.file;
     }
     if (entry?.status === "error" && !opts.retryErrors) {
@@ -99,11 +140,15 @@ export class MagicRunner {
         await this.store.update(hash, { kind: spec.kind, status: "running" });
         this.log(`✦ ${describe(spec)} → ${this.backend.label}`);
         const started = Date.now();
-        const result = await this.backend.run({ ...resolved, name: `remotion ${hash}` } as ResolvedSpec);
+        const result =
+          spec.kind === "render"
+            ? await renderComposition(spec, this.opts)
+            : await this.backend.run({ ...resolved, name: `remotion ${hash}` } as ResolvedSpec);
         const rel = outputFileFor(spec, hash);
         const abs = path.join(this.opts.publicDir, rel);
         await mkdir(path.dirname(abs), { recursive: true });
         await rename(result.file, abs).catch(() => copyFile(result.file, abs));
+        this.forcedDone.add(hash);
         await this.store.update(hash, {
           kind: spec.kind,
           status: "done",
@@ -135,7 +180,7 @@ export class MagicRunner {
 
   private async resolveInputs(spec: JobSpec, opts: { retryErrors?: boolean }): Promise<JobSpec> {
     const out: Record<string, unknown> = { ...spec };
-    const keys = ["video", "audio", "image", "face", "background", "cloneFrom"] as const;
+    const keys = ["video", "audio", "image", "face", "background", "cloneFrom", "referenceImage"] as const;
     await Promise.all(
       keys.map(async (k) => {
         const v = (spec as Record<string, unknown>)[k] as MagicInput | undefined;
