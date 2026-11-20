@@ -57,6 +57,23 @@ export class MagicHourBackend implements Backend {
   }
 
   async run(spec: ResolvedSpec): Promise<BackendResult> {
+    try {
+      return await this.runInner(spec);
+    } catch (err: any) {
+      // Surface Magic Hour's own validation message instead of a bare "422 was returned".
+      let detail: string | undefined;
+      try {
+        const body = err?.response?.text ? JSON.parse(await err.response.text()) : undefined;
+        detail = body?.message;
+      } catch {
+        // ignore
+      }
+      if (detail) throw new Error(`Magic Hour rejected the ${spec.kind} request: ${detail}`);
+      throw err;
+    }
+  }
+
+  private async runInner(spec: ResolvedSpec): Promise<BackendResult> {
     const v1 = (await this.sdk()).v1;
     const downloadDirectory = await tmpDir();
     const opts = { waitForCompletion: true, downloadOutputs: true, downloadDirectory };
@@ -147,31 +164,57 @@ export class MagicHourBackend implements Backend {
         break;
       }
       case "restyle": {
-        const video = spec.video as string;
+        let video = spec.video as string;
+        let trimSpec: { trim?: { start?: number; end?: number } } = spec;
+        // Cut the requested section locally and send only that (fewer bytes to upload,
+        // and avoids offset handling on Magic Hour's side).
+        if (spec.trim?.start && (await hasBinary("ffmpeg")) && !/^https?:/.test(video)) {
+          const cut = path.join(downloadDirectory, "restyle-input.mp4");
+          const t = ["-ss", String(spec.trim.start), ...(spec.trim.end ? ["-to", String(spec.trim.end)] : [])];
+          await ffmpeg(["-i", video, ...t, "-an", "-c:v", "libx264", "-pix_fmt", "yuv420p", "-preset", "veryfast", "-crf", "16", cut]);
+          video = cut;
+          trimSpec = {};
+        }
         const dims = await getDimensions(video);
-        res = await v1.videoToVideo.generate(
-          {
-            name,
-            assets: {
-              videoSource: "file",
-              videoFilePath: video,
-              initialImagePath: spec.referenceImage as string | undefined,
-            },
-            ...(await window(spec, video)),
-            fps: Math.round(dims.fps),
-            width: dims.width,
-            height: dims.height,
-            fpsResolution: spec.halfFps ? "HALF" : "FULL",
-            style: {
-              artStyle: spec.artStyle,
-              model: spec.model,
-              version: spec.version,
-              prompt: spec.prompt,
-              promptType: spec.prompt ? "append_default" : undefined,
-            },
+        const base = {
+          name,
+          assets: {
+            videoSource: "file",
+            videoFilePath: video,
+            initialImagePath: spec.referenceImage as string | undefined,
           },
-          opts,
-        );
+          ...(await window(trimSpec, video)),
+          fps: Math.round(dims.fps),
+          width: dims.width,
+          height: dims.height,
+          fpsResolution: spec.halfFps ? "HALF" : "FULL",
+        };
+        void trimSpec;
+        // Not every art style supports every model version. Magic Hour's default (v3) needs a
+        // reference image, so without one try the most consistent version first and fall back.
+        const versions = spec.version ? [spec.version] : spec.referenceImage ? ["v3"] : ["v2", "v1"];
+        for (const [i, version] of versions.entries()) {
+          try {
+            res = await v1.videoToVideo.generate(
+              {
+                ...base,
+                style: {
+                  artStyle: spec.artStyle,
+                  model: spec.model,
+                  version,
+                  prompt: spec.prompt,
+                  promptType: spec.prompt ? "append_default" : undefined,
+                },
+              },
+              opts,
+            );
+            break;
+          } catch (err: any) {
+            const text = err?.response?.text ? await err.response.clone?.().text?.().catch(() => "") ?? "" : "";
+            const unavailable = /unavailable for art style/i.test(text) || /unavailable for art style/i.test(String(err?.message));
+            if (!unavailable || i === versions.length - 1) throw err;
+          }
+        }
         break;
       }
       case "render":
