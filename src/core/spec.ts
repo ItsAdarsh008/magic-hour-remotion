@@ -116,6 +116,15 @@ export type ImageEditSpec = {
   model?: string;
 };
 
+/** Generates an instrumental (or sung) track (Magic Hour AI Music Generator). 15–300 seconds. */
+export type MusicSpec = {
+  kind: "music";
+  prompt: string;
+  seconds: number;
+  instrumental?: boolean;
+  lyrics?: string;
+};
+
 export type RemoveBackgroundSpec = {
   kind: "remove-background";
   image: MagicInput;
@@ -134,6 +143,7 @@ export type JobSpec = (
   | RenderSpec
   | StillSpec
   | ImageEditSpec
+  | MusicSpec
 ) & {
   /** Change this to force a fresh generation with otherwise identical props. */
   cacheKey?: string;
@@ -154,6 +164,7 @@ export const OUTPUT_TYPE: Record<JobKind, OutputType> = {
   render: "video",
   still: "image",
   "image-edit": "image",
+  music: "audio",
 };
 
 export const OUTPUT_EXT: Record<OutputType, string> = {
@@ -174,6 +185,7 @@ export const LABEL: Record<JobKind, string> = {
   render: "composition render",
   still: "composition still",
   "image-edit": "image edit",
+  music: "music",
 };
 
 export const isSpec = (x: unknown): x is JobSpec =>

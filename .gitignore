@@ -4,3 +4,4 @@ dist
 example/public/magichour
 example/out
 .env
+example/public/demo/studio.mp4

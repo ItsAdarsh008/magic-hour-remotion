@@ -73,6 +73,46 @@ export class MagicHourBackend implements Backend {
     }
   }
 
+  private async musicViaRest(spec: Extract<ResolvedSpec, { kind: "music" }>, name: string, dir: string) {
+    const headers = { Authorization: `Bearer ${this.apiKey}`, "Content-Type": "application/json" };
+    const base = "https://api.magichour.ai";
+    const create = await fetch(`${base}/v1/ai-music-generator`, {
+      method: "POST",
+      headers,
+      body: JSON.stringify({
+        name,
+        duration: Math.max(15, Math.min(300, Math.round(spec.seconds))),
+        style: { prompt: spec.prompt, instrumental: spec.instrumental ?? true, ...(spec.lyrics ? { lyrics: spec.lyrics } : {}) },
+      }),
+    });
+    const created = (await create.json()) as { id?: string; message?: string };
+    if (!create.ok || !created.id) throw new Error(`Magic Hour rejected the music request: ${created.message ?? create.status}`);
+    for (;;) {
+      await new Promise((r) => setTimeout(r, 4000));
+      const r = await fetch(`${base}/v1/audio-projects/${created.id}`, { headers });
+      const p = (await r.json()) as any;
+      if (p.status === "complete") {
+        const url = p.downloads?.[0]?.url as string | undefined;
+        if (!url) throw new Error(`Music project ${created.id} finished without a download`);
+        const ext = path.extname(new URL(url).pathname) || ".mp3";
+        const file = path.join(dir, `music${ext}`);
+        const bytes = Buffer.from(await (await fetch(url)).arrayBuffer());
+        const { writeFile } = await import("node:fs/promises");
+        await writeFile(file, bytes);
+        // Downloads are sometimes WAV; store everything as MP3 so the cached file matches its name.
+        let outFile = file;
+        if (ext.toLowerCase() !== ".mp3" && (await hasBinary("ffmpeg"))) {
+          outFile = path.join(dir, "music.mp3");
+          await ffmpeg(["-i", file, "-b:a", "192k", outFile]);
+        }
+        return { status: "complete", id: created.id, creditsCharged: p.credits_charged ?? p.creditsCharged, downloadedPaths: [outFile] };
+      }
+      if (p.status === "error" || p.status === "canceled") {
+        return { status: p.status, id: created.id, error: p.error };
+      }
+    }
+  }
+
   private async runInner(spec: ResolvedSpec): Promise<BackendResult> {
     const v1 = (await this.sdk()).v1;
     const downloadDirectory = await tmpDir();
@@ -220,6 +260,11 @@ export class MagicHourBackend implements Backend {
         }
         break;
       }
+      case "music": {
+        // The SDK's request validator for this endpoint currently throws, so call the REST API directly.
+        res = await this.musicViaRest(spec, name, downloadDirectory);
+        break;
+      }
       case "image-edit": {
         res = await v1.aiImageEditor.generate(
           {
@@ -336,6 +381,11 @@ export class MockBackend implements Backend {
       }
       case "image-edit": {
         await copyFile(spec.image as string, out);
+        break;
+      }
+      case "music": {
+        if (!haveFfmpeg) throw new Error("Mock mode needs ffmpeg on PATH");
+        await ffmpeg(["-f", "lavfi", "-i", `sine=frequency=330:duration=${spec.seconds}`, "-af", "volume=0.1", out]);
         break;
       }
       case "render":

@@ -9,6 +9,7 @@ import {
   type MagicInput,
   type RemoveBackgroundSpec,
   type ImageEditSpec,
+  type MusicSpec,
   type RenderSpec,
   type RestyleSpec,
   type TalkingPhotoSpec,
@@ -259,6 +260,17 @@ export const MagicImageEdit: React.FC<MagicImageEditProps> = (props) => {
   if (state.status === "done" && state.src) return <Img {...(rest as ImgProps)} src={state.src} />;
   if (state.status === "collect") return null;
   return <MagicPlaceholder kind={job.kind} state={state} source={previewOf(job.image)} sourceType="image" style={(rest as ImgProps).style} />;
+};
+
+export type MagicMusicProps = Common & { prompt: string; seconds: number; instrumental?: boolean; lyrics?: string } & AudioProps;
+
+/** A generated soundtrack as an <Audio>. Tip: set `seconds` to your composition's length. */
+export const MagicMusic: React.FC<MagicMusicProps> = (props) => {
+  const { spec, rest } = pick(props, ["prompt", "seconds", "instrumental", "lyrics", "cacheKey"] as const);
+  const job = { kind: "music", ...spec } as MusicSpec;
+  const state = useMagicAsset(job);
+  if (state.status === "done" && state.src) return <Audio {...(rest as AudioProps)} src={state.src} />;
+  return null;
 };
 
 export { isSpec };

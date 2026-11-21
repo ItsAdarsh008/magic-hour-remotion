@@ -9,13 +9,20 @@
     "render": "magichour-remotion prefetch && remotion render ScriptEdit out/script-edit.mp4"
   },
   "dependencies": {
-    "@remotion/cli": "4.0.543",
+    "@fontsource/instrument-serif": "^5.3.0",
+    "@fontsource/jetbrains-mono": "^5.3.0",
+    "@fontsource/space-grotesk": "^5.3.0",
     "@remotion/bundler": "4.0.543",
+    "@remotion/cli": "4.0.543",
+    "@remotion/fonts": "^4.0.543",
+    "@remotion/motion-blur": "^4.0.543",
     "@remotion/renderer": "4.0.543",
+    "@remotion/transitions": "^4.0.543",
     "magic-hour-remotion": "file:..",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "remotion": "4.0.543",
+    "shiki": "^4.6.0",
     "zod": "4.6.7"
   },
   "devDependencies": {

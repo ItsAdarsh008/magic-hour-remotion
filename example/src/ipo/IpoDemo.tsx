@@ -11,6 +11,7 @@ import { MagicBadge, MagicRestyle } from "magic-hour-remotion";
 import { ChartBars } from "./ChartBars";
 import { ChartLabels } from "./ChartLabels";
 import { RACE } from "./race";
+import { restyleProps } from "./restyle";
 import { SOURCES } from "../data/tech-ipos";
 
 export type Orientation = "landscape" | "portrait";
@@ -160,50 +161,6 @@ const CodeScene: React.FC<{ o: Orientation; dur: number }> = ({ o, dur }) => {
 // ---------------------------------------------------------------------------
 
 const STYLES = ["Watercolor", "Yarn", "Paper Cut", "Crayon"] as const;
-
-/** How each material should look in the reference image (stronger than the video prompt). */
-const LOOK: Record<string, string> = {
-  Claymation: "chunky handmade plasticine with visible fingerprints and soft stop-motion studio lighting",
-  Yarn: "thick knitted wool with visible stitches, like a cozy knitted blanket",
-  "Paper Cut": "layered colored construction paper cut-outs with soft drop shadows",
-  Crayon: "bold waxy crayon strokes on textured paper, like a child's drawing",
-};
-
-const MATERIAL: Record<string, string> = {
-  Claymation: "modeling clay",
-  Watercolor: "watercolor paint",
-  Yarn: "knitted yarn",
-  "Paper Cut": "layered cut paper",
-  Crayon: "wax crayon",
-};
-
-const chartPrompt = (style: string) =>
-  `${style} style: thick horizontal bars made of ${MATERIAL[style] ?? style} on a plain blank background, ` +
-  "a simple bar chart, flat, minimal, clean edges, no scenery, no trees, no buildings, no landscape, no people, no text";
-
-/**
- * Restyle settings that keep a chart a chart.
- * - Watercolor supports Magic Hour's v1 model: a custom prompt describing exactly what's there is enough.
- * - Newer styles (Claymation, Yarn, Paper Cut, Crayon) only run on v3, which follows a reference image.
- *   The plugin makes that reference itself: a still of ChartBars, restyled by Magic Hour's image editor.
- */
-const restyleProps = (style: string) => {
-  if (style === "Watercolor") {
-    return { version: "v1" as const, promptType: "custom" as const, prompt: chartPrompt(style) };
-  }
-  return {
-    promptType: "custom" as const,
-    prompt: chartPrompt(style),
-    referenceImage: {
-      kind: "image-edit" as const,
-      image: { kind: "still" as const, composition: "ChartBars", frame: 239 },
-      prompt:
-        `Recreate this exact bar chart in ${style} style: every bar is made of ${LOOK[style] ?? MATERIAL[style] ?? style}, ` +
-        "with the same color, position, length and order. Keep the layout identical and the background plain. " +
-        "No text, no extra objects, no scenery.",
-    },
-  };
-};
 
 export const IPO_DEMO_FRAMES = 810;
 

@@ -1,0 +1,107 @@
+[
+ {
+  "t": 8.898,
+  "kind": "move",
+  "x": 975,
+  "y": 797,
+  "label": "play"
+ },
+ {
+  "t": 9.499,
+  "kind": "click",
+  "x": 975,
+  "y": 797,
+  "label": "play"
+ },
+ {
+  "t": 12.53,
+  "kind": "move",
+  "x": 1617,
+  "y": 270,
+  "label": "dropdown"
+ },
+ {
+  "t": 13.131,
+  "kind": "click",
+  "x": 1617,
+  "y": 270,
+  "label": "dropdown"
+ },
+ {
+  "t": 15.143,
+  "kind": "move",
+  "x": 1556.03125,
+  "y": 353.75,
+  "label": "Yarn"
+ },
+ {
+  "t": 15.744,
+  "kind": "click",
+  "x": 1556.03125,
+  "y": 353.75,
+  "label": "Yarn"
+ },
+ {
+  "t": 20.204,
+  "kind": "move",
+  "x": 1617,
+  "y": 270,
+  "label": "dropdown"
+ },
+ {
+  "t": 20.804,
+  "kind": "click",
+  "x": 1617,
+  "y": 270,
+  "label": "dropdown"
+ },
+ {
+  "t": 22.12,
+  "kind": "move",
+  "x": 1523.421875,
+  "y": 381.25,
+  "label": "Paper Cut"
+ },
+ {
+  "t": 22.72,
+  "kind": "click",
+  "x": 1523.421875,
+  "y": 381.25,
+  "label": "Paper Cut"
+ },
+ {
+  "t": 26.881,
+  "kind": "move",
+  "x": 1617,
+  "y": 270,
+  "label": "dropdown"
+ },
+ {
+  "t": 27.481,
+  "kind": "click",
+  "x": 1617,
+  "y": 270,
+  "label": "dropdown"
+ },
+ {
+  "t": 28.776,
+  "kind": "move",
+  "x": 1550.53125,
+  "y": 436.25,
+  "label": "Origami"
+ },
+ {
+  "t": 29.376,
+  "kind": "click",
+  "x": 1550.53125,
+  "y": 436.25,
+  "label": "Origami"
+ },
+ {
+  "t": 264.518,
+  "kind": "end",
+  "x": 0,
+  "y": 0,
+  "label": ""
+ }
+]
