@@ -6,13 +6,13 @@ import { ChartBars } from "./ipo/ChartBars";
 import { IpoDemo, IPO_DEMO_FRAMES } from "./ipo/IpoDemo";
 import { RACE } from "./ipo/race";
 import { ChartStudio, chartStudioSchema } from "./ipo/ChartStudio";
-import { LaunchDemo, LAUNCH_FRAMES } from "./demo2/LaunchDemo";
+import { LaunchDemo, framesFor } from "./demo2/LaunchDemo";
 
 export const Root: React.FC = () => (
   <>
     {/* v2 launch demo: real Studio footage, generated soundtrack */}
-    <Composition id="LaunchDemo" component={LaunchDemo} defaultProps={{ orientation: "landscape" as const }} durationInFrames={LAUNCH_FRAMES} fps={30} width={1920} height={1080} />
-    <Composition id="LaunchDemoVertical" component={LaunchDemo} defaultProps={{ orientation: "portrait" as const }} durationInFrames={LAUNCH_FRAMES} fps={30} width={1080} height={1920} />
+    <Composition id="LaunchDemo" component={LaunchDemo} defaultProps={{ orientation: "landscape" as const }} durationInFrames={framesFor("landscape")} fps={30} width={1920} height={1080} />
+    <Composition id="LaunchDemoVertical" component={LaunchDemo} defaultProps={{ orientation: "portrait" as const }} durationInFrames={framesFor("portrait")} fps={30} width={1080} height={1920} />
     {/* Launch demo: biggest tech IPOs, restyled by Magic Hour, exact numbers by Remotion. */}
     <Composition
       id="IpoDemo"

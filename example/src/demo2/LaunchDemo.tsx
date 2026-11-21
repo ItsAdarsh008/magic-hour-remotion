@@ -34,6 +34,9 @@ const T = {
   end: [570, 705],
 } as const;
 export const LAUNCH_FRAMES = 705;
+/** Short-form only: a 2.5s "what is Remotion" opener. */
+export const INTRO_FRAMES = 75;
+export const framesFor = (o: Orientation) => LAUNCH_FRAMES + (o === "portrait" ? INTRO_FRAMES : 0);
 
 const MUSIC_PROMPT =
   "Playful, warm stop-motion animation soundtrack. Plucky marimba, pizzicato strings, upright bass, light hand claps and a soft kick. Steady 120 BPM, confident and curious, clean mix, starts immediately with no long intro, instrumental, no vocals.";
@@ -331,16 +334,8 @@ const Sfx: React.FC<{ at: number; src: string; volume?: number }> = ({ at, src, 
 );
 
 const Sound: React.FC = () => {
-  const { fps } = useVideoConfig();
   return (
     <>
-      <MagicMusic
-        prompt={MUSIC_PROMPT}
-        seconds={40}
-        instrumental
-        trimBefore={5 * fps}
-        volume={(f) => interpolate(f, [0, 6, LAUNCH_FRAMES - 40, LAUNCH_FRAMES], [0, 0.55, 0.55, 0], { extrapolateLeft: "clamp", extrapolateRight: "clamp" })}
-      />
       {/* Anthropic overtakes SpaceX in the hook (race frame ~200) */}
       <Sfx at={200 - 150} src="thud.ogg" volume={0.5} />
       <Sfx at={T.reveal[0]} src="whoosh.ogg" volume={0.35} />
@@ -355,10 +350,42 @@ const Sound: React.FC = () => {
   );
 };
 
+
+/** Short-form opener: Remotion in one line, while the plain race plays up to where the clay picks up. */
+const Intro: React.FC<{ o: Orientation }> = ({ o }) => {
+  const frame = useCurrentFrame();
+  const L = layout(o);
+  const c = interpolate(frame, [18, 30], [0, 1], { extrapolateLeft: "clamp", extrapolateRight: "clamp", easing: EASE });
+  return (
+    <AbsoluteFill>
+      <Stage o={o}>
+        <ChartBars speed={2} />
+        <ChartLabels speed={2} />
+      </Stage>
+      <Top o={o}>
+        <Tag at={0}>What's Remotion?</Tag>
+        <div style={{ height: 14 }} />
+        <Rise text="Videos made from" size={L.title} at={2} />
+        <Rise text="React code." size={L.title} at={12} italic color={CLAY} />
+      </Top>
+      <div style={{ position: "absolute", left: 0, right: 0, top: L.chip - 46, display: "flex", justifyContent: "center", opacity: c, translate: `0 ${(1 - c) * 12}px` }}>
+        <div style={{ fontFamily: MONO, fontSize: 30, color: MUTED, padding: "8px 18px", borderRadius: 10, background: "rgba(255,255,255,0.45)", border: `1px solid ${LINE}` }}>
+          <span style={{ color: "#3f6fb5" }}>&lt;BarChartRace</span> <span style={{ color: "#7a5aa8" }}>data</span>={"{"}
+          <span style={{ color: CLAY }}>ipos</span>
+          {"}"} <span style={{ color: "#3f6fb5" }}>/&gt;</span>
+        </div>
+      </div>
+    </AbsoluteFill>
+  );
+};
+
 // ---------------------------------------------------------------------------
 
 export const LaunchDemo: React.FC<{ orientation: Orientation }> = ({ orientation: o }) => {
   useFonts();
+  const { fps } = useVideoConfig();
+  const intro = o === "portrait" ? INTRO_FRAMES : 0;
+  const total = LAUNCH_FRAMES + intro;
   const scene = (k: keyof typeof T, el: React.ReactNode) => (
     <Sequence from={T[k][0]} durationInFrames={T[k][1] - T[k][0]} name={k}>
       {el}
@@ -366,13 +393,28 @@ export const LaunchDemo: React.FC<{ orientation: Orientation }> = ({ orientation
   );
   return (
     <AbsoluteFill style={{ background: PAPER }}>
-      {scene("hook", <Hook o={o} />)}
-      {scene("reveal", <Reveal o={o} />)}
-      {scene("layers", <Layers o={o} />)}
-      {scene("styles", <Styles o={o} />)}
-      {scene("rapid", <Rapid o={o} />)}
-      {scene("end", <End o={o} />)}
-      <Sound />
+      {intro > 0 && (
+        <Sequence durationInFrames={intro} name="intro">
+          <Intro o={o} />
+        </Sequence>
+      )}
+      <Sequence from={intro} name="main">
+        {scene("hook", <Hook o={o} />)}
+        {scene("reveal", <Reveal o={o} />)}
+        {scene("layers", <Layers o={o} />)}
+        {scene("styles", <Styles o={o} />)}
+        {scene("rapid", <Rapid o={o} />)}
+        {scene("end", <End o={o} />)}
+        <Sound />
+      </Sequence>
+      {/* the track's drop (8s in) still lands on the reveal */}
+      <MagicMusic
+        prompt={MUSIC_PROMPT}
+        seconds={40}
+        instrumental
+        trimBefore={5 * fps - intro}
+        volume={(f) => interpolate(f, [0, 6, total - 40, total], [0, 0.55, 0.55, 0], { extrapolateLeft: "clamp", extrapolateRight: "clamp" })}
+      />
       <Grain />
     </AbsoluteFill>
   );
