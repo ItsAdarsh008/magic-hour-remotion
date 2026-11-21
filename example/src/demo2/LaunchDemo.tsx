@@ -35,7 +35,7 @@ const T = {
 } as const;
 export const LAUNCH_FRAMES = 705;
 /** Short-form only: a 2.5s "what is Remotion" opener. */
-export const INTRO_FRAMES = 75;
+export const INTRO_FRAMES = 120;
 export const framesFor = (o: Orientation) => LAUNCH_FRAMES + (o === "portrait" ? INTRO_FRAMES : 0);
 
 const MUSIC_PROMPT =
@@ -351,28 +351,65 @@ const Sound: React.FC = () => {
 };
 
 
-/** Short-form opener: Remotion in one line, while the plain race plays up to where the clay picks up. */
+/** Short-form opener: what Remotion is (remotion.dev: "Make videos programmatically"), shown literally: code → video. */
+const CODE: [string, string][][] = [
+  [["const ", "#7a5aa8"], ["IpoRace", "#3f6fb5"], [" = () => {", INK]],
+  [["  const ", "#7a5aa8"], ["frame", INK], [" = ", INK], ["useCurrentFrame", "#3f6fb5"], ["();", INK]],
+  [["  return ", "#7a5aa8"], ["<", INK], ["BarChartRace", "#3f6fb5"], [" data", "#7a5aa8"], ["={", INK], ["ipos", CLAY], ["}", INK]],
+  [["         frame", "#7a5aa8"], ["={", INK], ["frame", CLAY], ["} />", INK], [";", INK]],
+  [["};", INK]],
+];
+const RENDER_AT = 45; // the code becomes the video here
+
 const Intro: React.FC<{ o: Orientation }> = ({ o }) => {
   const frame = useCurrentFrame();
   const L = layout(o);
-  const c = interpolate(frame, [18, 30], [0, 1], { extrapolateLeft: "clamp", extrapolateRight: "clamp", easing: EASE });
+  const codeIn = interpolate(frame, [4, 16], [0, 1], { extrapolateLeft: "clamp", extrapolateRight: "clamp", easing: EASE });
+  const wipe = interpolate(frame, [RENDER_AT, RENDER_AT + 12], [0, 1], { extrapolateLeft: "clamp", extrapolateRight: "clamp", easing: EASE_IN_OUT });
+  const cmd = interpolate(frame, [30, 36], [0, 1], { extrapolateLeft: "clamp", extrapolateRight: "clamp" });
+  const bar = interpolate(frame, [34, RENDER_AT], [0, 1], { extrapolateLeft: "clamp", extrapolateRight: "clamp" });
+  const lines = Math.floor(interpolate(frame, [6, 26], [0, CODE.length], { extrapolateLeft: "clamp", extrapolateRight: "clamp" }));
+  const after = interpolate(frame, [RENDER_AT + 8, RENDER_AT + 18], [0, 1], { extrapolateLeft: "clamp", extrapolateRight: "clamp", easing: EASE });
   return (
     <AbsoluteFill>
-      <Stage o={o}>
-        <ChartBars speed={2} />
-        <ChartLabels speed={2} />
-      </Stage>
+      {/* the rendered video */}
+      <div style={{ position: "absolute", inset: 0, clipPath: `inset(0 0 ${(1 - wipe) * 100}% 0)` }}>
+        <Stage o={o}>
+          <Sequence from={RENDER_AT} layout="none">
+            <ChartBars speed={2} />
+            <ChartLabels speed={2} />
+          </Sequence>
+        </Stage>
+      </div>
+      {/* the code that makes it */}
+      <div style={{ position: "absolute", left: 70, right: 70, top: L.chart.y + 120, opacity: codeIn * Math.max(0, 1 - wipe * 2.5), translate: `0 ${(1 - codeIn) * 20 - wipe * 60}px` }}>
+        <div style={{ background: "rgba(255,255,255,0.6)", border: `1px solid ${LINE}`, borderRadius: 22, padding: "34px 40px", boxShadow: "0 20px 50px rgba(60,40,10,0.08)" }}>
+          <div style={{ fontFamily: MONO, fontSize: 25, color: MUTED, marginBottom: 22 }}>IpoRace.tsx</div>
+          {CODE.map((line, i) => (
+            <div key={i} style={{ fontFamily: MONO, fontSize: 36, lineHeight: 1.6, whiteSpace: "pre", opacity: i < lines ? 1 : 0 }}>
+              {line.map(([t, c], j) => (
+                <span key={j} style={{ color: c }}>{t}</span>
+              ))}
+            </div>
+          ))}
+          <div style={{ marginTop: 30, paddingTop: 24, borderTop: `1px solid ${LINE}`, opacity: cmd }}>
+            <div style={{ fontFamily: MONO, fontSize: 32, color: INK }}>
+              <span style={{ color: MUTED }}>$ </span>npx remotion render
+            </div>
+            <div style={{ marginTop: 18, height: 10, borderRadius: 5, background: LINE }}>
+              <div style={{ height: 10, borderRadius: 5, width: `${bar * 100}%`, background: CLAY }} />
+            </div>
+          </div>
+        </div>
+      </div>
       <Top o={o}>
-        <Tag at={0}>What's Remotion?</Tag>
-        <div style={{ height: 14 }} />
-        <Rise text="Videos made from" size={L.title} at={2} />
-        <Rise text="React code." size={L.title} at={12} italic color={CLAY} />
+        <Rise text="Remotion" size={L.title * 1.7} at={0} stagger={0} />
+        <div style={{ height: 4 }} />
+        <Rise text="makes videos with React code." size={L.title * 0.8} at={8} italic color={CLAY} />
       </Top>
-      <div style={{ position: "absolute", left: 0, right: 0, top: L.chip - 46, display: "flex", justifyContent: "center", opacity: c, translate: `0 ${(1 - c) * 12}px` }}>
+      <div style={{ position: "absolute", left: 0, right: 0, top: L.chip - 46, display: "flex", justifyContent: "center", opacity: after }}>
         <div style={{ fontFamily: MONO, fontSize: 30, color: MUTED, padding: "8px 18px", borderRadius: 10, background: "rgba(255,255,255,0.45)", border: `1px solid ${LINE}` }}>
-          <span style={{ color: "#3f6fb5" }}>&lt;BarChartRace</span> <span style={{ color: "#7a5aa8" }}>data</span>={"{"}
-          <span style={{ color: CLAY }}>ipos</span>
-          {"}"} <span style={{ color: "#3f6fb5" }}>/&gt;</span>
+          IpoRace.mp4 <span style={{ color: CLAY }}>· rendered from code</span>
         </div>
       </div>
     </AbsoluteFill>
