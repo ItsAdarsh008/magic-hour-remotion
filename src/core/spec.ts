@@ -77,6 +77,8 @@ export type RestyleSpec = {
   /** One of Magic Hour's art styles, e.g. "Claymation", "Chalkboard", "Paper Cut", "Yarn", "Watercolor". */
   artStyle: string;
   prompt?: string;
+  /** "append_default" adds your prompt to the style's own; "custom" replaces it (best for keeping shapes). */
+  promptType?: "append_default" | "custom";
   model?: string;
   /** "v2" is described by Magic Hour as more consistent; "v3" needs `referenceImage`. */
   version?: "default" | "v1" | "v2" | "v3";
@@ -98,6 +100,22 @@ export type RenderSpec = {
   props?: Record<string, unknown>;
 };
 
+/** Renders one frame of your own composition to a PNG, locally (no API call). */
+export type StillSpec = {
+  kind: "still";
+  composition: string;
+  frame?: number;
+  props?: Record<string, unknown>;
+};
+
+/** Edits an image from a prompt (Magic Hour AI Image Editor). */
+export type ImageEditSpec = {
+  kind: "image-edit";
+  image: MagicInput;
+  prompt: string;
+  model?: string;
+};
+
 export type RemoveBackgroundSpec = {
   kind: "remove-background";
   image: MagicInput;
@@ -114,6 +132,8 @@ export type JobSpec = (
   | RemoveBackgroundSpec
   | RestyleSpec
   | RenderSpec
+  | StillSpec
+  | ImageEditSpec
 ) & {
   /** Change this to force a fresh generation with otherwise identical props. */
   cacheKey?: string;
@@ -132,6 +152,8 @@ export const OUTPUT_TYPE: Record<JobKind, OutputType> = {
   "remove-background": "image",
   restyle: "video",
   render: "video",
+  still: "image",
+  "image-edit": "image",
 };
 
 export const OUTPUT_EXT: Record<OutputType, string> = {
@@ -150,6 +172,8 @@ export const LABEL: Record<JobKind, string> = {
   "remove-background": "background removal",
   restyle: "restyle",
   render: "composition render",
+  still: "composition still",
+  "image-edit": "image edit",
 };
 
 export const isSpec = (x: unknown): x is JobSpec =>

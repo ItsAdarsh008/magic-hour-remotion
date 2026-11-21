@@ -46,6 +46,7 @@ const describe = (spec: JobSpec) => {
     .filter((v): v is string => typeof v === "string")
     .map((v) => path.basename(v));
   if (spec.kind === "render") return `render of composition "${spec.composition}"`;
+  if (spec.kind === "still") return `still of composition "${spec.composition}" (frame ${spec.frame ?? 0})`;
   if (spec.kind === "restyle") bits.push(spec.artStyle);
   if (spec.kind === "voice" && typeof spec.cloneFrom === "string") bits.push(`cloned from ${path.basename(spec.cloneFrom)}`);
   if (spec.kind === "voice") bits.push(`"${spec.text.slice(0, 40)}${spec.text.length > 40 ? "…" : ""}"`);
@@ -53,7 +54,7 @@ const describe = (spec: JobSpec) => {
 };
 
 const dependsOnRender = (spec: JobSpec): boolean => {
-  if (spec.kind === "render") return true;
+  if (spec.kind === "render" || spec.kind === "still") return true;
   return Object.values(spec).some((v) => isSpec(v) && dependsOnRender(v));
 };
 
@@ -80,6 +81,30 @@ const renderComposition = async (
   const composition = await selectComposition({ serveUrl, id: spec.composition, inputProps, browserExecutable });
   const out = path.join(await mkdtemp(path.join(os.tmpdir(), "magichour-render-")), "render.mp4");
   await renderMedia({ composition, serveUrl, codec: "h264", outputLocation: out, inputProps, browserExecutable });
+  return { file: out, projectId: "local-render", credits: 0 };
+};
+
+/** Renders one frame of the user's own composition to a PNG (no Magic Hour call, no credits). */
+const renderStillFrame = async (
+  spec: Extract<JobSpec, { kind: "still" }>,
+  opts: RunnerOptions,
+): Promise<{ file: string; projectId?: string; credits?: number }> => {
+  const { bundle } = await import("@remotion/bundler");
+  const { renderStill, selectComposition } = await import("@remotion/renderer");
+  const os = await import("node:os");
+  const { mkdtemp } = await import("node:fs/promises");
+  const entryPoint = path.resolve(opts.entryPoint ?? "src/index.ts");
+  let serveUrlP = bundles.get(entryPoint);
+  if (!serveUrlP) {
+    serveUrlP = bundle({ entryPoint, publicDir: opts.publicDir });
+    bundles.set(entryPoint, serveUrlP);
+  }
+  const serveUrl = await serveUrlP;
+  const inputProps = spec.props ?? {};
+  const browserExecutable = opts.browserExecutable ?? process.env.REMOTION_BROWSER_EXECUTABLE ?? null;
+  const composition = await selectComposition({ serveUrl, id: spec.composition, inputProps, browserExecutable });
+  const out = path.join(await mkdtemp(path.join(os.tmpdir(), "magichour-still-")), "still.png");
+  await renderStill({ composition, serveUrl, output: out, frame: spec.frame ?? 0, inputProps, browserExecutable, imageFormat: "png" });
   return { file: out, projectId: "local-render", credits: 0 };
 };
 
@@ -143,6 +168,8 @@ export class MagicRunner {
         const result =
           spec.kind === "render"
             ? await renderComposition(spec, this.opts)
+            : spec.kind === "still"
+            ? await renderStillFrame(spec, this.opts)
             : await this.backend.run({ ...resolved, name: `remotion ${hash}` } as ResolvedSpec);
         const rel = outputFileFor(spec, hash);
         const abs = path.join(this.opts.publicDir, rel);

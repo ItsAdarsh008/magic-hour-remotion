@@ -8,6 +8,7 @@ import {
   type LipSyncSpec,
   type MagicInput,
   type RemoveBackgroundSpec,
+  type ImageEditSpec,
   type RenderSpec,
   type RestyleSpec,
   type TalkingPhotoSpec,
@@ -203,6 +204,7 @@ export type MagicRestyleProps = Common & {
   composition?: string;
   compositionProps?: Record<string, unknown>;
   prompt?: string;
+  promptType?: "append_default" | "custom";
   model?: string;
   version?: "default" | "v1" | "v2" | "v3";
   referenceImage?: MagicInput;
@@ -218,7 +220,7 @@ export type MagicRestyleProps = Common & {
  */
 export const MagicRestyle: React.FC<MagicRestyleProps> = (props) => {
   const { spec, rest } = pick(props, [
-    "artStyle", "video", "composition", "compositionProps", "prompt", "model",
+    "artStyle", "video", "composition", "compositionProps", "prompt", "promptType", "model",
     "version", "referenceImage", "halfFps", "trim", "cacheKey",
   ] as const);
   let video = spec.video as MagicInput | undefined;
@@ -236,6 +238,7 @@ export const MagicRestyle: React.FC<MagicRestyleProps> = (props) => {
     video,
     artStyle: spec.artStyle as string,
     prompt: spec.prompt as string | undefined,
+    promptType: spec.promptType as RestyleSpec["promptType"],
     model: spec.model as string | undefined,
     version: spec.version as RestyleSpec["version"],
     referenceImage: spec.referenceImage as MagicInput | undefined,
@@ -244,6 +247,18 @@ export const MagicRestyle: React.FC<MagicRestyleProps> = (props) => {
     cacheKey: spec.cacheKey as string | undefined,
   };
   return <MagicVideoOutput spec={job} preview={undefined} previewType="video" mediaProps={rest as VideoProps} />;
+};
+
+export type MagicImageEditProps = Common & { image: MagicInput; prompt: string; model?: string } & ImgProps;
+
+/** Edits an image from a prompt and shows it as an <Img>. */
+export const MagicImageEdit: React.FC<MagicImageEditProps> = (props) => {
+  const { spec, rest } = pick(props, ["image", "prompt", "model", "cacheKey"] as const);
+  const job = { kind: "image-edit", ...spec } as ImageEditSpec;
+  const state = useMagicAsset(job);
+  if (state.status === "done" && state.src) return <Img {...(rest as ImgProps)} src={state.src} />;
+  if (state.status === "collect") return null;
+  return <MagicPlaceholder kind={job.kind} state={state} source={previewOf(job.image)} sourceType="image" style={(rest as ImgProps).style} />;
 };
 
 export { isSpec };

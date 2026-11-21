@@ -181,7 +181,10 @@ export class MagicHourBackend implements Backend {
           assets: {
             videoSource: "file",
             videoFilePath: video,
-            initialImagePath: spec.referenceImage as string | undefined,
+            // The SDK only auto-uploads the main video, so upload the reference image ourselves.
+            initialImagePath: spec.referenceImage
+              ? await (await this.sdk()).v1.files.uploadFile(spec.referenceImage as string)
+              : undefined,
           },
           ...(await window(trimSpec, video)),
           fps: Math.round(dims.fps),
@@ -203,7 +206,7 @@ export class MagicHourBackend implements Backend {
                   model: spec.model,
                   version,
                   prompt: spec.prompt,
-                  promptType: spec.prompt ? "append_default" : undefined,
+                  promptType: spec.prompt ? (spec.promptType ?? "append_default") : undefined,
                 },
               },
               opts,
@@ -217,8 +220,21 @@ export class MagicHourBackend implements Backend {
         }
         break;
       }
+      case "image-edit": {
+        res = await v1.aiImageEditor.generate(
+          {
+            name,
+            assets: { imageFilePaths: [spec.image as string] },
+            style: { prompt: spec.prompt },
+            ...(spec.model ? { model: spec.model } : {}),
+          },
+          opts,
+        );
+        break;
+      }
       case "render":
-        throw new Error("render jobs run locally, not through the API");
+      case "still":
+        throw new Error("render/still jobs run locally, not through the API");
       case "remove-background": {
         res = await v1.imageBackgroundRemover.generate(
           {
@@ -318,8 +334,13 @@ export class MockBackend implements Backend {
         await ffmpeg([...t, "-i", spec.video as string, "-vf", mockStyleFilter(spec.artStyle), "-an", ...enc, out]);
         break;
       }
+      case "image-edit": {
+        await copyFile(spec.image as string, out);
+        break;
+      }
       case "render":
-        throw new Error("render jobs run locally");
+      case "still":
+        throw new Error("render/still jobs run locally");
     }
     return { file: out, projectId: "mock", credits: 0 };
   }

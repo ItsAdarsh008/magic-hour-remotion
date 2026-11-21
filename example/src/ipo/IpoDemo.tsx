@@ -159,9 +159,53 @@ const CodeScene: React.FC<{ o: Orientation; dur: number }> = ({ o, dur }) => {
 // Composition
 // ---------------------------------------------------------------------------
 
-const STYLES = ["Chalkboard", "Yarn", "Paper Cut", "Watercolor"] as const;
+const STYLES = ["Watercolor", "Yarn", "Paper Cut", "Crayon"] as const;
 
-export const IPO_DEMO_FRAMES = 900;
+/** How each material should look in the reference image (stronger than the video prompt). */
+const LOOK: Record<string, string> = {
+  Claymation: "chunky handmade plasticine with visible fingerprints and soft stop-motion studio lighting",
+  Yarn: "thick knitted wool with visible stitches, like a cozy knitted blanket",
+  "Paper Cut": "layered colored construction paper cut-outs with soft drop shadows",
+  Crayon: "bold waxy crayon strokes on textured paper, like a child's drawing",
+};
+
+const MATERIAL: Record<string, string> = {
+  Claymation: "modeling clay",
+  Watercolor: "watercolor paint",
+  Yarn: "knitted yarn",
+  "Paper Cut": "layered cut paper",
+  Crayon: "wax crayon",
+};
+
+const chartPrompt = (style: string) =>
+  `${style} style: thick horizontal bars made of ${MATERIAL[style] ?? style} on a plain blank background, ` +
+  "a simple bar chart, flat, minimal, clean edges, no scenery, no trees, no buildings, no landscape, no people, no text";
+
+/**
+ * Restyle settings that keep a chart a chart.
+ * - Watercolor supports Magic Hour's v1 model: a custom prompt describing exactly what's there is enough.
+ * - Newer styles (Claymation, Yarn, Paper Cut, Crayon) only run on v3, which follows a reference image.
+ *   The plugin makes that reference itself: a still of ChartBars, restyled by Magic Hour's image editor.
+ */
+const restyleProps = (style: string) => {
+  if (style === "Watercolor") {
+    return { version: "v1" as const, promptType: "custom" as const, prompt: chartPrompt(style) };
+  }
+  return {
+    promptType: "custom" as const,
+    prompt: chartPrompt(style),
+    referenceImage: {
+      kind: "image-edit" as const,
+      image: { kind: "still" as const, composition: "ChartBars", frame: 239 },
+      prompt:
+        `Recreate this exact bar chart in ${style} style: every bar is made of ${LOOK[style] ?? MATERIAL[style] ?? style}, ` +
+        "with the same color, position, length and order. Keep the layout identical and the background plain. " +
+        "No text, no extra objects, no scenery.",
+    },
+  };
+};
+
+export const IPO_DEMO_FRAMES = 810;
 
 export const IpoDemo: React.FC<{ orientation: Orientation }> = ({ orientation: o }) => {
   return (
@@ -183,11 +227,19 @@ export const IpoDemo: React.FC<{ orientation: Orientation }> = ({ orientation: o
       </Sequence>
 
       {/* 3. Same data, restyled by Magic Hour, exact numbers on top */}
-      <Sequence from={300} durationInFrames={240}>
-        <Fade dur={240}>
+      {/* Starts 3s into the race: AI restyling follows the (full-chart) reference image too eagerly in the
+          first, nearly empty seconds, so we pick up once the chart has filled in. */}
+      <Sequence from={300} durationInFrames={150}>
+        <Fade dur={150}>
           <ChartSlot o={o}>
-            <MagicRestyle composition="ChartBars" artStyle="Claymation" style={{ width: "100%", height: "100%" }} />
-            <ChartLabels />
+            <MagicRestyle
+              composition="ChartBars"
+              artStyle="Claymation"
+              {...restyleProps("Claymation")}
+              trimBefore={90}
+              style={{ width: "100%", height: "100%" }}
+            />
+            <ChartLabels frameOffset={90} />
           </ChartSlot>
           <Caption o={o} kicker="+ Magic Hour" title={<>Same chart.<br />Made of clay.</>} code={`artStyle="Claymation"`} />
         </Fade>
@@ -195,12 +247,13 @@ export const IpoDemo: React.FC<{ orientation: Orientation }> = ({ orientation: o
 
       {/* 4. Any style, one prop */}
       {STYLES.map((style, i) => (
-        <Sequence key={style} from={540 + i * 52} durationInFrames={52}>
+        <Sequence key={style} from={450 + i * 52} durationInFrames={52}>
           <AbsoluteFill>
             <ChartSlot o={o}>
               <MagicRestyle
                 composition="ChartBars"
                 artStyle={style}
+                {...restyleProps(style)}
                 trim={{ start: 6, end: 8 }}
                 style={{ width: "100%", height: "100%" }}
               />
@@ -212,7 +265,7 @@ export const IpoDemo: React.FC<{ orientation: Orientation }> = ({ orientation: o
       ))}
 
       {/* 5. End card */}
-      <Sequence from={748}>
+      <Sequence from={658}>
         <EndCard o={o} />
       </Sequence>
     </AbsoluteFill>
