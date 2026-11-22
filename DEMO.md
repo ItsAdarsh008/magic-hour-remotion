@@ -17,4 +17,4 @@
 - The new line is spoken in your own voice automatically: the plugin clones it from `host.mp4`'s audio. A clip where you talk clearly with no background music gives the best clone.
 - Generate the "today" line once before recording so the swap is fast on camera, then cut out the wait honestly with a "4x" label.
 
-**X / Hacker News variant:** open with Claude Code. Prompt "make a 20s launch video for Retake using magic-hour-remotion". The agent writes the composition using the skill in `skill/SKILL.md`, you run prefetch, and it renders.
+**X / Hacker News variant:** open with Claude Code. Prompt "make a 20s launch video for Retake using magic-hour-remotion". The agent writes the composition using the skill in `skills/magic-hour-remotion/SKILL.md`, you run prefetch, and it renders.
