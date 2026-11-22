@@ -4,7 +4,10 @@
   "description": "Magic Hour AI (lip sync, face swap, talking photo, upscaling, voice) as drop-in Remotion components.",
   "type": "module",
   "license": "MIT",
-  "repository": { "type": "git", "url": "git+https://github.com/ItsAdarsh008/magic-hour-remotion.git" },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ItsAdarsh008/magic-hour-remotion.git"
+  },
   "homepage": "https://github.com/ItsAdarsh008/magic-hour-remotion#readme",
   "keywords": [
     "remotion",
@@ -33,13 +36,14 @@
   "files": [
     "dist",
     "bin",
-    "skill",
+    "skills",
     "README.md"
   ],
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "test": "npm run build && node --test test/*.test.mjs"
+    "test": "npm run build && node --test test/*.test.mjs",
+    "prepublishOnly": "npm run build"
   },
   "peerDependencies": {
     "@remotion/bundler": ">=4.0.0",
