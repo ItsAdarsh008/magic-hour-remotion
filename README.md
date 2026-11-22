@@ -2,15 +2,18 @@
 
 [![CI](https://github.com/ItsAdarsh008/magic-hour-remotion/actions/workflows/ci.yml/badge.svg)](https://github.com/ItsAdarsh008/magic-hour-remotion/actions/workflows/ci.yml) [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
-**Magic Hour AI as Remotion components.** Lip sync, talking photos, face swap, upscaling, image-to-video, voice cloning and background removal, written like any other part of your video:
+**Every Magic Hour AI tool as a Remotion component.** Restyle any composition into claymation, watercolor, yarn and more, edit images, generate music, lip sync, face swap, upscale, animate photos, written like any other part of your video:
 
 ```tsx
-import { MagicLipSync } from "magic-hour-remotion";
+import { MagicRestyle } from "magic-hour-remotion";
 
-<MagicLipSync video="host.mp4" text="We shipped it today." />
+// render your own <BarChartRace> composition, then restyle the pixels
+<MagicRestyle composition="BarChartRace" artStyle="Claymation" />
 ```
 
-Change the `text`, save, and a few seconds later in Remotion Studio the person on screen says the new line, in their own cloned voice, with their lips re-synced. Render as usual, and every result is cached so you never pay twice for the same props.
+Remotion draws the chart, Magic Hour turns it into clay, and your labels and numbers stay as exact React layered on top. Every result is cached by its props, so you never pay twice for the same thing.
+
+**For AI agents:** `npx skills add ItsAdarsh008/magic-hour-remotion` teaches Claude Code, Cursor and other agents how to use it.
 
 ## Quickstart
 
@@ -31,6 +34,9 @@ No key yet? Add `--mock` to `dev` and `prefetch`. Outputs are faked with ffmpeg 
 
 | Component | Props | Output |
 |---|---|---|
+| `MagicRestyle` | `video` **or** `composition` (+ `compositionProps?`), `artStyle`, `prompt?`, `referenceImage?`, `trim?` | video |
+| `MagicImageEdit` | `image`, `prompt` | image |
+| `MagicMusic` | `prompt`, `seconds`, `instrumental?` | audio |
 | `MagicLipSync` | `video`, `audio` **or** `text` (+ `cloneVoiceFrom?` / `voice?`), `mode?`, `maxFps?`, `trim?` | video |
 | `MagicTalkingPhoto` | `image`, `audio` **or** `text` + (`cloneVoiceFrom` or `voice`), `resolution?` | video |
 | `MagicFaceSwap` | `video`, `face`, `trim?` | video |
@@ -78,8 +84,9 @@ Every distinct set of props is one paid generation. Lip sync is about 1 credit p
 
 ## Example
 
-`example/` is a Remotion project with two compositions:
+`example/` is a Remotion project. The launch demo is there:
 
+- **LaunchDemo / LaunchDemoVertical**: the biggest tech IPOs since 1980 as a bar chart race, restyled into six Magic Hour art styles, with a soundtrack from `MagicMusic`.
 - **ScriptEdit**: the demo. Edit `line` in the Studio's props panel and the host says it in their own voice, lips re-synced. The code on screen updates to match.
 - **FounderUpdate**: a vertical talking-headshot update made from a photo, a script and a voice sample.
 
