@@ -1,6 +1,6 @@
 ---
 name: magic-hour-remotion
-description: Use when building Remotion videos that need AI lip sync, talking photos, face swap, video upscaling, image-to-video, text-to-speech or background removal. Adds Magic Hour components from the magic-hour-remotion package.
+description: Use when building Remotion videos that need Magic Hour AI — restyling a composition or clip into an art style (claymation, watercolor, yarn…), image editing, music generation, lip sync, talking photos, face swap, upscaling, image-to-video, voice or background removal. Adds Magic Hour components from the magic-hour-remotion package.
 ---
 
 # Magic Hour in Remotion
