@@ -2,6 +2,9 @@
 
 [![CI](https://github.com/ItsAdarsh008/magic-hour-remotion/actions/workflows/ci.yml/badge.svg)](https://github.com/ItsAdarsh008/magic-hour-remotion/actions/workflows/ci.yml) [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
+<p align="center"><img src="docs/demo.gif" width="480" alt="A Remotion bar chart race restyled by MagicRestyle into watercolor, yarn, paper cut, crayon, origami and claymation, with the labels staying as React"></p>
+<p align="center"><sub>One Remotion chart, six <code>&lt;MagicRestyle artStyle="…" /&gt;</code> looks. The labels and numbers are still React on top.</sub></p>
+
 **Every Magic Hour AI tool as a Remotion component.** Restyle any composition into claymation, watercolor, yarn and more, edit images, generate music, lip sync, face swap, upscale, animate photos, written like any other part of your video:
 
 ```tsx
